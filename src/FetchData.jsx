@@ -185,7 +185,7 @@ function FetchData() {
           value={fileContent}
           defaultValue={`Load CSV File`}
           readOnly
-          className={`flex-1 p-2 border border-gray-300 rounded-md ${
+          className={`flex-1 p-2 border border-gray-300 rounded-md resize-none ${
             data.length > 0 ? 'min-w-[600px]' : 'min-w-[1200px]'
           } min-h-[500px]`}
         />
@@ -193,7 +193,7 @@ function FetchData() {
           <textarea
             value={Papa.unparse(data)}
             readOnly
-            className='flex-1 p-2 border border-gray-300 rounded-md min-w-[600px] min-h-[500px]'
+            className='flex-1 p-2 border border-gray-300 rounded-md resize-none min-w-[600px] min-h-[500px]'
           />
         )}
       </div>
