@@ -182,8 +182,10 @@ function FetchData() {
 
       <div className='flex flex-row space-x-4 my-4'>
         <textarea
-          value={fileContent}
-          defaultValue={`Load CSV File`}
+          value={
+            fileContent ||
+            'Please load your CardMarket CSV file. The input data will show here once loaded.'
+          }
           readOnly
           className={`flex-1 p-2 border border-gray-300 rounded-md resize-none ${
             data.length > 0 ? 'min-w-[600px]' : 'min-w-[1200px]'
@@ -200,8 +202,9 @@ function FetchData() {
 
       {loading ? (
         <div className='my-4 p-4 bg-blue-100 rounded-md shadow-md'>
-          <p className='text-lg text-blue-600'>Loading...</p>
           <p className='text-lg text-blue-600'>
+            Loading...
+            <br />
             This may take a while depending on the size of your CSV file.
           </p>
         </div>
