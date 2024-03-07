@@ -199,9 +199,9 @@ function FetchData() {
       </div>
 
       {loading ? (
-        <div>
-          <p className='my-4 text-lg text-blue-500'>Loading...</p>
-          <p className='my-4 text-lg text-blue-500'>
+        <div className='my-4 p-4 bg-blue-100 rounded-md shadow-md'>
+          <p className='text-lg text-blue-600'>Loading...</p>
+          <p className='text-lg text-blue-600'>
             This may take a while depending on the size of your CSV file.
           </p>
         </div>
@@ -219,8 +219,10 @@ function FetchData() {
 
           {/* Display the missing IDs */}
           {missingIds.length > 0 && (
-            <div className='my-4 p-4 max-w-xl min-w-80 bg-red-100 rounded-md shadow-md'>
-              <h2 className='text-lg font-bold text-red-600'>Missing IDs</h2>
+            <div className='my-4 p-4 max-w-xl min-w-[500px] bg-red-100 rounded-md shadow-md'>
+              <h2 className='text-lg font-bold text-red-600 text-center'>
+                Missing CardMarket IDs
+              </h2>
               {missingIds.map((id, index) => (
                 <p key={index} className='text-red-600'>
                   {id}
