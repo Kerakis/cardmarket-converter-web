@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
@@ -10,7 +10,13 @@ function FetchData() {
   const [error, setError] = useState(null);
   const [file, setFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
-  const [fileChanged, setFileChanged] = useState(false);
+  const [fileChanged, setFileChanged] = useState(true);
+  const [copied, setCopied] = useState(null);
+
+  useEffect(() => {
+    // This code will run whenever allMissingIds changes
+    console.log(missingIds);
+  }, [missingIds]); // Dependency array
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -32,6 +38,7 @@ function FetchData() {
       setError('No file selected.');
       setMissingIds([]);
       setData([]);
+      setCopied(false);
       setFileChanged(false);
       return;
     }
@@ -43,30 +50,66 @@ function FetchData() {
     setError(null);
     setMissingIds([]);
     setData([]);
+    setCopied(false);
 
     // Parse the CSV file
     Papa.parse(fileContent, {
       header: true,
       complete: (results) => {
-        if (!results.meta.fields.includes('idProduct')) {
-          setError('Invalid CSV File. `idProduct` column required.');
+        const fields = results.meta.fields;
+        if (!fields.includes('idProduct') && !fields.includes('Product ID')) {
+          setError(
+            'Invalid CSV File. `idProduct` or `Product ID` column required.'
+          );
           setLoading(false);
           setFileChanged(false);
           setMissingIds([]);
           setData([]);
+          setCopied(false);
           return;
         }
 
         // Fetch data for each Cardmarket ID
         results.data.forEach((row, index) => {
           setTimeout(() => {
+            let isToken = '';
+            let expansion = row.Expansion || '';
+            let article = row.Article || '';
+
+            if (fields.includes('Product ID')) {
+              if (row.Category && row.Category !== 'Magic Single') {
+                return;
+              }
+            }
+
+            expansion = expansion.replace(': Extras', '');
+            if (['Mystery Booster', 'The List'].includes(expansion)) {
+              expansion = 'PLST';
+            } else if (expansion === '30th Anniversary Celebration') {
+              expansion = 'P30A';
+            }
+            if (expansion.includes('Commander:')) {
+              expansion = expansion.replace('Commander: ', '');
+            }
+            expansion = expansion.replace(': Promos', ' Promos');
+            article = article.replace(/\(.*\)/, '');
+            if (article.includes('Token')) {
+              article = article.replace(/Token.*$/, '');
+              expansion += ' Tokens';
+              isToken = '+t:token';
+            }
+
+            const idProduct = row['Product ID'] || row.idProduct;
+            const count = row.groupCount || row.Amount;
+            const purchasePrice = row.price || row['Article Value'];
+
             axios
-              .get(`https://api.scryfall.com/cards/cardmarket/${row.idProduct}`)
+              .get(`https://api.scryfall.com/cards/cardmarket/${idProduct}`)
               .then((response) => {
                 if (response.status === 200) {
                   const card = response.data;
                   allData.push({
-                    Count: row.groupCount || '',
+                    Count: count,
                     Name: card.name,
                     Edition: card.set,
                     Language: getLanguageName(row.idLanguage) || '',
@@ -74,23 +117,81 @@ function FetchData() {
                     CollectorNumber: card.collector_number,
                     Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
                     Condition: getConditionName(row.condition) || 'NM',
-                    PurchasePrice: row.price || '',
+                    PurchasePrice: purchasePrice,
                   });
                 }
               })
               .catch((err) => {
-                if (err.response && err.response.status === 404) {
-                  allMissingIds.push(row.idProduct);
+                if (
+                  err.response &&
+                  err.response.status === 404 &&
+                  row.Article &&
+                  row.Expansion
+                ) {
+                  axios
+                    .get(
+                      `https://api.scryfall.com/cards/search?q=e%3A%22${expansion}%22+${article}${isToken}`
+                    )
+                    .then((response) => {
+                      if (response.status === 200) {
+                        const card = response.data;
+                        allData.push({
+                          Count: count,
+                          Name: card.data[0].name,
+                          Edition: card.data[0].set,
+                          Language: getLanguageName(row.idLanguage) || '',
+                          Foil: getFoil(row.isFoil, card.data[0].finishes),
+                          CollectorNumber: card.data[0].collector_number,
+                          Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
+                          Condition: getConditionName(row.condition) || 'NM',
+                          PurchasePrice: purchasePrice,
+                        });
+                        allMissingIds.push(
+                          `${idProduct} - This is likely ${card.data[0].name}. You should double-check the printing.`
+                        );
+                      }
+                    })
+                    .catch((err) => {
+                      if (
+                        err.response &&
+                        err.response.status == 404 &&
+                        row.Category == 'Magic Single'
+                      ) {
+                        allMissingIds.push(
+                          `${idProduct} - This may be ${article} from ${expansion}, but I cannot be sure.`
+                        );
+                      }
+                    })
+                    .finally(() => {
+                      if (index === results.data.length - 1) {
+                        setData(allData);
+                        setMissingIds(allMissingIds);
+                        setLoading(false);
+                        setFileChanged(false);
+                      }
+                    });
+                } else if (
+                  err.response &&
+                  err.response.status === 404 &&
+                  !row.Category
+                ) {
+                  allMissingIds.push(
+                    `${idProduct} - Scryfall is missing this CardMarket ID.`
+                  );
                 } else {
-                  setError(err.message);
+                  if (err.response && err.response.status !== 404) {
+                    setError(err.message);
+                  }
                   setFileChanged(false);
                   setMissingIds([]);
                   setData([]);
+                  setCopied(false);
                 }
               })
               .finally(() => {
                 if (index === results.data.length - 1) {
                   setData(allData);
+                  console.log(allMissingIds);
                   setMissingIds(allMissingIds);
                   setLoading(false);
                   setFileChanged(false);
@@ -104,6 +205,7 @@ function FetchData() {
         setLoading(false);
         setMissingIds([]);
         setData([]);
+        setCopied(false);
       },
     });
   };
@@ -134,7 +236,7 @@ function FetchData() {
       MT: 'M',
       NM: 'NM',
       EX: 'LP',
-      GD: 'LP',
+      GD: 'MP',
       LP: 'MP',
       PL: 'HP',
       PO: 'D',
@@ -231,6 +333,16 @@ function FetchData() {
                   {id}
                 </p>
               ))}
+              <button
+                onClick={() => {
+                  const missingIdsText = missingIds.join('\n');
+                  navigator.clipboard.writeText(missingIdsText);
+                  setCopied(true);
+                }}
+                className='my-4 p-2 bg-yellow-500 text-white rounded-md relative'
+                disabled={copied}>
+                {copied ? 'Copied!' : 'Copy Missing IDs'}
+              </button>
             </div>
           )}
         </>
