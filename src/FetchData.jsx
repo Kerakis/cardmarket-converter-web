@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
@@ -12,11 +12,6 @@ function FetchData() {
   const [fileContent, setFileContent] = useState('');
   const [fileChanged, setFileChanged] = useState(true);
   const [copied, setCopied] = useState(null);
-
-  useEffect(() => {
-    // This code will run whenever allMissingIds changes
-    console.log(missingIds);
-  }, [missingIds]); // Dependency array
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -43,8 +38,8 @@ function FetchData() {
       return;
     }
 
-    const allData = [];
-    const allMissingIds = [];
+    // const allData = [];
+    // const allMissingIds = [];
 
     setLoading(true);
     setError(null);
@@ -108,17 +103,20 @@ function FetchData() {
               .then((response) => {
                 if (response.status === 200) {
                   const card = response.data;
-                  allData.push({
-                    Count: count,
-                    Name: card.name,
-                    Edition: card.set,
-                    Language: getLanguageName(row.idLanguage) || '',
-                    Foil: getFoil(row.isFoil, card.finishes),
-                    CollectorNumber: card.collector_number,
-                    Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
-                    Condition: getConditionName(row.condition) || 'NM',
-                    PurchasePrice: purchasePrice,
-                  });
+                  setData((prevData) => [
+                    ...prevData,
+                    {
+                      Count: count,
+                      Name: card.name,
+                      Edition: card.set,
+                      Language: getLanguageName(row.idLanguage) || '',
+                      Foil: getFoil(row.isFoil, card.finishes),
+                      CollectorNumber: card.collector_number,
+                      Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
+                      Condition: getConditionName(row.condition) || 'NM',
+                      PurchasePrice: purchasePrice,
+                    },
+                  ]);
                 }
               })
               .catch((err) => {
@@ -135,20 +133,24 @@ function FetchData() {
                     .then((response) => {
                       if (response.status === 200) {
                         const card = response.data;
-                        allData.push({
-                          Count: count,
-                          Name: card.data[0].name,
-                          Edition: card.data[0].set,
-                          Language: getLanguageName(row.idLanguage) || '',
-                          Foil: getFoil(row.isFoil, card.data[0].finishes),
-                          CollectorNumber: card.data[0].collector_number,
-                          Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
-                          Condition: getConditionName(row.condition) || 'NM',
-                          PurchasePrice: purchasePrice,
-                        });
-                        allMissingIds.push(
-                          `${idProduct} - This is likely ${card.data[0].name}. You should double-check the printing.`
-                        );
+                        setData((prevData) => [
+                          ...prevData,
+                          {
+                            Count: count,
+                            Name: card.data[0].name,
+                            Edition: card.data[0].set,
+                            Language: getLanguageName(row.idLanguage) || '',
+                            Foil: getFoil(row.isFoil, card.data[0].finishes),
+                            CollectorNumber: card.data[0].collector_number,
+                            Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
+                            Condition: getConditionName(row.condition) || 'NM',
+                            PurchasePrice: purchasePrice,
+                          },
+                        ]);
+                        setMissingIds((prevMissingIds) => [
+                          ...prevMissingIds,
+                          `${idProduct} - This is likely ${card.data[0].name}. You should double-check the printing.`,
+                        ]);
                       }
                     })
                     .catch((err) => {
@@ -157,15 +159,16 @@ function FetchData() {
                         err.response.status == 404 &&
                         row.Category == 'Magic Single'
                       ) {
-                        allMissingIds.push(
-                          `${idProduct} - This may be ${article} from ${expansion}, but I cannot be sure.`
-                        );
+                        setMissingIds((prevMissingIds) => [
+                          ...prevMissingIds,
+                          `${idProduct} - This may be ${article} from ${expansion}, but I cannot be sure.`,
+                        ]);
                       }
                     })
                     .finally(() => {
                       if (index === results.data.length - 1) {
-                        setData(allData);
-                        setMissingIds(allMissingIds);
+                        // setData(allData);
+                        // setMissingIds(allMissingIds);
                         setLoading(false);
                         setFileChanged(false);
                       }
@@ -175,9 +178,10 @@ function FetchData() {
                   err.response.status === 404 &&
                   !row.Category
                 ) {
-                  allMissingIds.push(
-                    `${idProduct} - Scryfall is missing this CardMarket ID.`
-                  );
+                  setMissingIds((prevMissingIds) => [
+                    ...prevMissingIds,
+                    `${idProduct} - Scryfall is missing this CardMarket ID.`,
+                  ]);
                 } else {
                   if (err.response && err.response.status !== 404) {
                     setError(err.message);
@@ -190,9 +194,9 @@ function FetchData() {
               })
               .finally(() => {
                 if (index === results.data.length - 1) {
-                  setData(allData);
-                  console.log(allMissingIds);
-                  setMissingIds(allMissingIds);
+                  // setData(allData);
+                  // console.log(allMissingIds);
+                  // setMissingIds(allMissingIds);
                   setLoading(false);
                   setFileChanged(false);
                 }
