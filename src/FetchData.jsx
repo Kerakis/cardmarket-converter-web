@@ -146,7 +146,12 @@ function FetchData() {
                         ]);
                         setMissingIds((prevMissingIds) => [
                           ...prevMissingIds,
-                          `${idProduct} - This is likely ${card.data[0].name}. You should double-check the printing.`,
+                          {
+                            id: idProduct,
+                            name: card.data[0].name,
+                            expansion: '',
+                            uri: card.data[0].scryfall_uri,
+                          },
                         ]);
                       }
                     })
@@ -158,7 +163,12 @@ function FetchData() {
                       ) {
                         setMissingIds((prevMissingIds) => [
                           ...prevMissingIds,
-                          `${idProduct} - This may be ${article} from ${expansion}, but I cannot be sure.`,
+                          {
+                            id: idProduct,
+                            name: article,
+                            expansion: expansion,
+                            uri: '',
+                          },
                         ]);
                       }
                     })
@@ -175,7 +185,11 @@ function FetchData() {
                 ) {
                   setMissingIds((prevMissingIds) => [
                     ...prevMissingIds,
-                    `${idProduct} - Scryfall is missing this CardMarket ID.`,
+                    {
+                      id: idProduct,
+                      name: 'Scryfall is missing this CardMarket ID.',
+                      uri: '',
+                    },
                   ]);
                 } else {
                   if (err.response && err.response.status !== 404) {
@@ -320,26 +334,50 @@ function FetchData() {
 
           {/* Display the missing IDs */}
           {missingIds.length > 0 && (
-            <div className='my-4 p-4 max-w-xl min-w-[500px] bg-red-100 rounded-md shadow-md'>
-              <h2 className='text-lg font-bold text-red-600 text-center'>
-                Missing CardMarket IDs
-              </h2>
-              {missingIds.map((id, index) => (
-                <p key={index} className='text-red-600'>
-                  {id}
-                </p>
-              ))}
+            <>
+              <div
+                className='my-4 p-4 max-w-xl min-w-[750px] bg-red-100 rounded-md shadow-md overflow-auto'
+                style={{ maxHeight: '200px' }}>
+                <h2 className='text-lg font-bold mb-2 text-red-600 text-center'>
+                  Missing CardMarket IDs
+                </h2>
+                {missingIds.map((item, index) => (
+                  <p key={index} className='text-red-600'>
+                    {item.id} -{' '}
+                    {item.uri ? (
+                      <>
+                        This is likely{' '}
+                        <a
+                          href={item.uri}
+                          target='_blank'
+                          rel='noopener noreferrer'>
+                          <strong>{item.name}</strong>
+                        </a>
+                        . You should double-check the printing.
+                      </>
+                    ) : item.expansion ? (
+                      <>
+                        This may be <strong>{item.name}</strong> from{' '}
+                        {item.expansion}, but I cannot be sure.
+                      </>
+                    ) : (
+                      item.name
+                    )}
+                  </p>
+                ))}
+              </div>
               <button
                 onClick={() => {
-                  const missingIdsText = missingIds.join('\n');
+                  const missingIdsText = missingIds
+                    .map((item) => item.id)
+                    .join('\n');
                   navigator.clipboard.writeText(missingIdsText);
                   setCopied(true);
                 }}
-                className='my-4 p-2 bg-yellow-500 text-white rounded-md relative'
-                disabled={copied}>
+                className='my-4 p-2 bg-yellow-500 text-white rounded-md relative'>
                 {copied ? 'Copied!' : 'Copy Missing IDs'}
               </button>
-            </div>
+            </>
           )}
         </>
       )}
