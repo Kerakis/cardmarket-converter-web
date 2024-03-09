@@ -38,9 +38,6 @@ function FetchData() {
       return;
     }
 
-    // const allData = [];
-    // const allMissingIds = [];
-
     setLoading(true);
     setError(null);
     setMissingIds([]);
@@ -167,8 +164,6 @@ function FetchData() {
                     })
                     .finally(() => {
                       if (index === results.data.length - 1) {
-                        // setData(allData);
-                        // setMissingIds(allMissingIds);
                         setLoading(false);
                         setFileChanged(false);
                       }
@@ -194,9 +189,6 @@ function FetchData() {
               })
               .finally(() => {
                 if (index === results.data.length - 1) {
-                  // setData(allData);
-                  // console.log(allMissingIds);
-                  // setMissingIds(allMissingIds);
                   setLoading(false);
                   setFileChanged(false);
                 }
