@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
@@ -133,12 +133,6 @@ function FetchData() {
           let expansion = row.Expansion || '';
           let article = row.Article || '';
 
-          if (fields.includes('Product ID')) {
-            if (row.Category && row.Category !== 'Magic Single') {
-              return;
-            }
-          }
-
           expansion = expansion.replace(': Extras', '');
           if (['Mystery Booster', 'The List'].includes(expansion)) {
             expansion = 'PLST';
@@ -159,6 +153,18 @@ function FetchData() {
           const idProduct = row['Product ID'] || row.idProduct;
           const count = row.groupCount || row.Amount;
           const purchasePrice = row.price || row['Article Value'];
+
+          if (row.Category && row.Category !== 'Magic Single') {
+            setMissingIds((prevMissingIds) => [
+              ...prevMissingIds,
+              {
+                id: idProduct,
+                line: index + 2,
+                reason: 'This is not a Magic card.',
+              },
+            ]);
+            return;
+          }
 
           try {
             const response = await axios.get(
@@ -216,9 +222,11 @@ function FetchData() {
                     ...prevMissingIds,
                     {
                       id: idProduct,
+                      line: index + 2,
                       name: card.data[0].name,
-                      expansion: '',
                       uri: card.data[0].scryfall_uri,
+                      reason:
+                        'The printing added to your Moxfield CSV may be incorrect.',
                     },
                   ]);
                 }
@@ -232,9 +240,10 @@ function FetchData() {
                     ...prevMissingIds,
                     {
                       id: idProduct,
+                      line: index + 2,
                       name: article,
                       expansion: expansion,
-                      uri: '',
+                      reason: 'Unable to find this card on Scryfall.',
                     },
                   ]);
                 }
@@ -248,8 +257,8 @@ function FetchData() {
                 ...prevMissingIds,
                 {
                   id: idProduct,
-                  name: 'Scryfall is missing this CardMarket ID.',
-                  uri: '',
+                  line: index + 2,
+                  reason: 'Scryfall is missing this CardMarket ID.',
                 },
               ]);
             } else {
@@ -295,6 +304,10 @@ function FetchData() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, 'output.csv');
   }
+
+  const sortedMissingIds = [...missingIds].sort((a, b) =>
+    a.reason.localeCompare(b.reason)
+  );
 
   return (
     <div className='flex flex-col items-center justify-center min-h-screen text-linen bg-tropical_indigo px-4'>
@@ -350,6 +363,7 @@ function FetchData() {
           <p className='text-lg text-dark_purple'>
             Loading...
             <br />
+            <br />
             This may take a while depending on the size of your CSV file.
           </p>
         </div>
@@ -372,31 +386,62 @@ function FetchData() {
                 <h2 className='text-lg font-bold mb-2 text-center'>
                   Missing CardMarket IDs
                 </h2>
-                {missingIds.map((item, index) => (
-                  <p key={index}>
-                    {item.id} -{' '}
-                    {item.uri ? (
-                      <>
-                        This is likely{' '}
-                        <a
-                          href={item.uri}
-                          target='_blank'
-                          rel='noopener noreferrer'>
-                          <strong>{item.name}</strong>
-                        </a>
-                        . You should double-check the printing.
-                      </>
-                    ) : item.expansion ? (
-                      <>
-                        This may be <strong>{item.name}</strong> from{' '}
-                        {item.expansion}, but I cannot be sure.
-                      </>
-                    ) : (
-                      item.name
-                    )}
-                  </p>
-                ))}
+                <div className='grid grid-cols-1 sm:grid-cols-9 gap-1'>
+                  <div className='hidden sm:block'>
+                    <strong>Line</strong>
+                  </div>
+                  <div className='hidden sm:block'>
+                    <strong>ID</strong>
+                  </div>
+                  <div className='hidden sm:block sm:col-span-7'>
+                    <strong>Reason</strong>
+                  </div>
+                  {sortedMissingIds.map((item, index) => (
+                    <React.Fragment key={item.line}>
+                      <div key={index} className='sm:col-span-1'>
+                        <span className='sm:hidden'>
+                          <strong>Line: </strong>
+                        </span>
+                        {item.line}
+                      </div>
+                      <div className='sm:col-span-1'>
+                        <span className='sm:hidden'>
+                          <strong>ID: </strong>
+                        </span>
+                        {item.id}
+                      </div>
+                      <div className='sm:col-span-7'>
+                        <span className='sm:hidden'>
+                          <strong>Reason: </strong>
+                        </span>
+                        {item.uri ? (
+                          <>
+                            This is likely{' '}
+                            <a
+                              href={item.uri}
+                              target='_blank'
+                              rel='noopener noreferrer'>
+                              <strong>{item.name}</strong>
+                            </a>
+                            . {item.reason}
+                          </>
+                        ) : item.expansion ? (
+                          <>
+                            {item.reason} This may be{' '}
+                            <strong>{item.name}</strong> from {item.expansion}.
+                          </>
+                        ) : (
+                          item.reason
+                        )}
+                      </div>
+                      {index < sortedMissingIds.length - 1 && (
+                        <hr className='sm:hidden' />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
+
               <button
                 onClick={() => {
                   const missingIdsText = missingIds
