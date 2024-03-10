@@ -29,6 +29,9 @@ function FetchData() {
   };
 
   const handleLoadFile = () => {
+    // Create a queue to store the updates
+    const updates = {};
+
     if (!file) {
       setError('No file selected.');
       setMissingIds([]);
@@ -100,7 +103,9 @@ function FetchData() {
               .then((response) => {
                 if (response.status === 200) {
                   const card = response.data;
-                  setData((prevData) => [
+
+                  // When you receive data, add the update to the queue
+                  updates[index] = (prevData) => [
                     ...prevData,
                     {
                       Count: count,
@@ -113,7 +118,7 @@ function FetchData() {
                       Condition: getConditionName(row.condition) || 'NM',
                       PurchasePrice: purchasePrice,
                     },
-                  ]);
+                  ];
                 }
               })
               .catch((err) => {
@@ -123,6 +128,7 @@ function FetchData() {
                   row.Article &&
                   row.Expansion
                 ) {
+                  console.log(article, expansion);
                   axios
                     .get(
                       `https://api.scryfall.com/cards/search?q=e%3A%22${expansion}%22+${article}${isToken}`
@@ -130,7 +136,10 @@ function FetchData() {
                     .then((response) => {
                       if (response.status === 200) {
                         const card = response.data;
-                        setData((prevData) => [
+                        console.log(card);
+
+                        // When you receive data, add the update to the queue
+                        updates[index] = (prevData) => [
                           ...prevData,
                           {
                             Count: count,
@@ -143,7 +152,7 @@ function FetchData() {
                             Condition: getConditionName(row.condition) || 'NM',
                             PurchasePrice: purchasePrice,
                           },
-                        ]);
+                        ];
                         setMissingIds((prevMissingIds) => [
                           ...prevMissingIds,
                           {
@@ -203,6 +212,14 @@ function FetchData() {
               })
               .finally(() => {
                 if (index === results.data.length - 1) {
+                  // Convert the updates object back into an array in the correct order
+                  const orderedData = Object.keys(updates)
+                    .sort((a, b) => a - b)
+                    .map((key) => updates[key]);
+
+                  orderedData.forEach((update) => {
+                    setData(update);
+                  });
                   setLoading(false);
                   setFileChanged(false);
                 }
@@ -275,46 +292,45 @@ function FetchData() {
   }
 
   return (
-    <div className='flex flex-col items-center justify-center min-h-screen bg-gray-900'>
-      <h1 className='text-5xl mb-24 mt-5'>
+    <div className='flex flex-col items-center justify-center min-h-screen bg-blue-dark px-4'>
+      <h1 className='text-5xl lg:mb-24 mb-2 mt-5 text-center text-white'>
         CardMarket to Moxfield CSV Converter
       </h1>
       <input
         type='file'
         accept='.csv'
         onChange={handleFileUpload}
-        className='my-4 p-2 border border-gray-300 rounded-md'
+        className='my-4 p-2 w-full max-w-md text-white border border-gray rounded-md'
       />
       <button
         onClick={handleLoadFile}
-        className='my-4 p-2 bg-blue-500 text-white rounded-md'
+        className='my-4 p-2 w-full max-w-md bg-blue text-white rounded-md'
         disabled={disableLoadButton}>
         Load CSV File
       </button>
 
-      <div className='flex flex-row space-x-4 my-4'>
+      <div className='flex flex-col xl:flex-row space-y-4 xl:space-y-0 xl:space-x-4 my-4 w-full max-w-3xl xl:max-w-6xl'>
         <textarea
           value={
             fileContent ||
             'Please load your CardMarket CSV file. The input data will show here once loaded.'
           }
           readOnly
-          className={`flex-1 p-2 border border-gray-300 rounded-md resize-none ${
-            data.length > 0 ? 'min-w-[600px]' : 'min-w-[1200px]'
-          } min-h-[500px]`}
+          className='p-2 border border-gray bg-[#3f3f3f] text-white rounded-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
         />
+        {/* Fix flashing of the textarea when the data is loading */}
         {data.length > 0 && (
           <textarea
             value={Papa.unparse(data)}
             readOnly
-            className='flex-1 p-2 border border-gray-300 rounded-md resize-none min-w-[600px] min-h-[500px]'
+            className='p-2 border border-gray bg-[#3f3f3f] text-white rounded-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
           />
         )}
       </div>
 
       {loading ? (
-        <div className='my-4 p-4 bg-blue-100 rounded-md shadow-md'>
-          <p className='text-lg text-blue-600'>
+        <div className='my-4 p-4 w-full max-w-md bg-blue rounded-md shadow-md'>
+          <p className='text-lg text-blue-dark'>
             Loading...
             <br />
             This may take a while depending on the size of your CSV file.
@@ -326,7 +342,7 @@ function FetchData() {
             <div>
               <button
                 onClick={downloadData}
-                className='my-4 p-2 bg-green-500 text-white rounded-md'>
+                className='my-4 p-2 bg-green text-white rounded-md'>
                 Download Moxfield CSV
               </button>
             </div>
@@ -335,14 +351,12 @@ function FetchData() {
           {/* Display the missing IDs */}
           {missingIds.length > 0 && (
             <>
-              <div
-                className='my-4 p-4 max-w-xl min-w-[750px] bg-red-100 rounded-md shadow-md overflow-auto'
-                style={{ maxHeight: '200px' }}>
-                <h2 className='text-lg font-bold mb-2 text-red-600 text-center'>
+              <div className='my-4 p-4 bg-orange-light rounded-md shadow-md overflow-auto max-h-64'>
+                <h2 className='text-lg font-bold text-orange-dark mb-2 text-center'>
                   Missing CardMarket IDs
                 </h2>
                 {missingIds.map((item, index) => (
-                  <p key={index} className='text-red-600'>
+                  <p key={index} className='text-orange-dark'>
                     {item.id} -{' '}
                     {item.uri ? (
                       <>
@@ -374,7 +388,7 @@ function FetchData() {
                   navigator.clipboard.writeText(missingIdsText);
                   setCopied(true);
                 }}
-                className='my-4 p-2 bg-yellow-500 text-white rounded-md relative'>
+                className='my-4 p-2 bg-yellow rounded-md relative'>
                 {copied ? 'Copied!' : 'Copy Missing IDs'}
               </button>
             </>
@@ -384,9 +398,9 @@ function FetchData() {
 
       {/* Display the error message */}
       {error && (
-        <div className='my-4 p-4 bg-yellow-100 rounded-md shadow-md'>
-          <h2 className='text-lg font-bold text-yellow-600'>Error</h2>
-          <p className='text-yellow-600'>{error}</p>
+        <div className='my-4 p-4 bg-red-light rounded-md shadow-md'>
+          <h2 className='text-lg font-bold'>Error</h2>
+          <p>{error}</p>
         </div>
       )}
     </div>
