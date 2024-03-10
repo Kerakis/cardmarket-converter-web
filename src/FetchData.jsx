@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
@@ -63,10 +63,6 @@ function FetchData() {
   const [fileContent, setFileContent] = useState('');
   const [fileChanged, setFileChanged] = useState(true);
   const [copied, setCopied] = useState(null);
-
-  useEffect(() => {
-    console.log(missingIds);
-  }, [missingIds]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -391,7 +387,8 @@ function FetchData() {
                   navigator.clipboard.writeText(missingIdsText);
                   setCopied(true);
                 }}
-                className='my-4 p-2 bg-yellow rounded-md relative'>
+                className='my-4 p-2 bg-yellow rounded-md relative'
+                disabled={copied}>
                 {copied ? 'Copied!' : 'Copy Missing IDs'}
               </button>
             </>
