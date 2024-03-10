@@ -68,6 +68,7 @@ function FetchData() {
     const file = event.target.files[0];
     setFile(file);
     setFileChanged(true);
+    setError(null);
 
     const reader = new FileReader();
     reader.onload = function (e) {
@@ -103,10 +104,19 @@ function FetchData() {
       header: true,
       complete: async (results) => {
         const fields = results.meta.fields;
-        if (!fields.includes('idProduct') && !fields.includes('Product ID')) {
-          setError(
-            'Invalid CSV File. `idProduct` or `Product ID` column required.'
-          );
+        if (
+          !(
+            fields.includes('idProduct') ||
+            (fields.includes('Product ID') &&
+              fields.includes('Article') &&
+              fields.includes('Expansion'))
+          )
+        ) {
+          setError([
+            'Invalid file format.',
+            'The file must include either an "idProduct" column header or all three of the following column headers: "Product ID", "Article", and "Expansion".',
+            'Are you sure this is a CardMarket CSV file?',
+          ]);
           setLoading(false);
           setFileChanged(false);
           setMissingIds([]);
@@ -287,21 +297,29 @@ function FetchData() {
   }
 
   return (
-    <div className='flex flex-col items-center justify-center min-h-screen bg-blue-dark px-4'>
-      <h1 className='text-5xl lg:mb-24 mb-2 mt-5 text-center text-white'>
+    <div className='flex flex-col items-center justify-center min-h-screen text-linen bg-tropical_indigo px-4'>
+      <h1 className='text-5xl lg:mb-24 mb-2 mt-5 text-center font-bold'>
         CardMarket to Moxfield CSV Converter
       </h1>
       <input
         type='file'
         accept='.csv'
         onChange={handleFileUpload}
-        className='my-4 p-2 w-full max-w-md text-white border border-gray rounded-md'
+        className='my-4 p-2 w-full max-w-md bg-french_gray text-dark_purple border-linen rounded-md shadow-md'
       />
       <button
         onClick={handleLoadFile}
-        className='my-4 p-2 w-full max-w-md bg-blue text-white rounded-md'
+        className={`my-4 p-2 w-full max-w-xs rounded-md shadow-md ${
+          error ? 'bg-slate_blue text-linen' : 'bg-french_gray text-dark_purple'
+        }`}
         disabled={disableLoadButton}>
-        Load CSV File
+        {error
+          ? 'Error'
+          : loading
+          ? 'Loading'
+          : fileChanged
+          ? 'Load CSV File'
+          : 'Data Loaded'}
       </button>
 
       <div
@@ -314,7 +332,7 @@ function FetchData() {
             'Please load your CardMarket CSV file. The input data will show here once loaded.'
           }
           readOnly
-          className={`p-2 border border-gray bg-[#3f3f3f] text-white rounded-md resize-none h-[200px] lg:h-[500px] ${
+          className={`p-2 border border-french_gray bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] ${
             data.length > 0 ? 'xl:w-1/2' : 'xl:w-full'
           }`}
         />
@@ -322,14 +340,14 @@ function FetchData() {
           <textarea
             value={Papa.unparse(data)}
             readOnly
-            className='p-2 border border-gray bg-[#3f3f3f] text-white rounded-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
+            className='p-2 border border-french_gray bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
           />
         )}
       </div>
 
       {loading ? (
-        <div className='my-4 p-4 w-full max-w-md bg-blue rounded-md shadow-md'>
-          <p className='text-lg text-blue-dark'>
+        <div className='my-4 p-4 w-full max-w-5xl bg-french_gray rounded-md shadow-md'>
+          <p className='text-lg text-dark_purple'>
             Loading...
             <br />
             This may take a while depending on the size of your CSV file.
@@ -338,10 +356,10 @@ function FetchData() {
       ) : (
         <>
           {data.length > 0 && (
-            <div>
+            <div className='w-full max-w-xs'>
               <button
                 onClick={downloadData}
-                className='my-4 p-2 bg-green text-white rounded-md'>
+                className='my-4 p-2 w-full text-dark_purple bg-french_gray rounded-md shadow-md'>
                 Download Moxfield CSV
               </button>
             </div>
@@ -350,12 +368,12 @@ function FetchData() {
           {/* Display the missing IDs */}
           {missingIds.length > 0 && (
             <>
-              <div className='my-4 p-4 bg-orange-light rounded-md shadow-md overflow-auto max-h-64'>
-                <h2 className='text-lg font-bold text-orange-dark mb-2 text-center'>
+              <div className='my-4 p-4 rounded-md shadow-md bg-dark_purple overflow-auto w-full max-w-5xl max-h-64'>
+                <h2 className='text-lg font-bold mb-2 text-center'>
                   Missing CardMarket IDs
                 </h2>
                 {missingIds.map((item, index) => (
-                  <p key={index} className='text-orange-dark'>
+                  <p key={index}>
                     {item.id} -{' '}
                     {item.uri ? (
                       <>
@@ -386,8 +404,9 @@ function FetchData() {
                     .join('\n');
                   navigator.clipboard.writeText(missingIdsText);
                   setCopied(true);
+                  setTimeout(() => setCopied(false), 2000); // Reset the copied state after 2 seconds
                 }}
-                className='my-4 p-2 bg-yellow rounded-md relative'
+                className='my-4 p-2 text-dark_purple bg-french_gray w-full max-w-xs rounded-md shadow-md'
                 disabled={copied}>
                 {copied ? 'Copied!' : 'Copy Missing IDs'}
               </button>
@@ -398,13 +417,19 @@ function FetchData() {
 
       {/* Display the error message */}
       {error && (
-        <div className='my-4 p-4 bg-red-light rounded-md shadow-md'>
+        <div className='my-4 p-4 bg-slate_blue w-full max-w-xl rounded-md shadow-md'>
           <h2 className='text-lg font-bold'>Error</h2>
-          <p>{error}</p>
+          {Array.isArray(error) ? (
+            error.map((errorMessage, index) => (
+              <p key={index}>{errorMessage}</p>
+            ))
+          ) : (
+            <p>{error}</p>
+          )}
         </div>
       )}
       <footer className='flex-shrink-0 mt-8 text-sm text-center lg:fixed lg:m-1 lg:bottom-0 lg:right-1'>
-        <p className='text-gray-light'>
+        <p>
           Made with <span className='font-sans'>&#9749;</span> by
           <a
             href='https://github.com/Kerakis'
