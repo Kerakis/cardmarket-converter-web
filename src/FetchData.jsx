@@ -305,11 +305,11 @@ function FetchData() {
         type='file'
         accept='.csv'
         onChange={handleFileUpload}
-        className='my-4 p-2 w-full max-w-md bg-french_gray text-dark_purple border-linen rounded-md shadow-md'
+        className='my-4 p-2 w-full max-w-md bg-french_gray text-dark_purple border border-linen rounded-md shadow-md'
       />
       <button
         onClick={handleLoadFile}
-        className={`my-4 p-2 w-full max-w-xs rounded-md shadow-md ${
+        className={`my-4 p-2 w-full max-w-xs border border-linen rounded-md shadow-md ${
           error ? 'bg-slate_blue text-linen' : 'bg-french_gray text-dark_purple'
         }`}
         disabled={disableLoadButton}>
@@ -332,7 +332,7 @@ function FetchData() {
             'Please load your CardMarket CSV file. The input data will show here once loaded.'
           }
           readOnly
-          className={`p-2 border border-french_gray bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] ${
+          className={`p-2 border border-linen bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] ${
             data.length > 0 ? 'xl:w-1/2' : 'xl:w-full'
           }`}
         />
@@ -340,13 +340,13 @@ function FetchData() {
           <textarea
             value={Papa.unparse(data)}
             readOnly
-            className='p-2 border border-french_gray bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
+            className='p-2 border border-linen bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
           />
         )}
       </div>
 
       {loading ? (
-        <div className='my-4 p-4 w-full max-w-5xl bg-french_gray rounded-md shadow-md'>
+        <div className='my-4 p-4 w-full max-w-5xl bg-french_gray border border-linen rounded-md shadow-md'>
           <p className='text-lg text-dark_purple'>
             Loading...
             <br />
@@ -359,7 +359,7 @@ function FetchData() {
             <div className='w-full max-w-xs'>
               <button
                 onClick={downloadData}
-                className='my-4 p-2 w-full text-dark_purple bg-french_gray rounded-md shadow-md'>
+                className='my-4 p-2 w-full text-dark_purple bg-french_gray border border-linen rounded-md shadow-md'>
                 Download Moxfield CSV
               </button>
             </div>
@@ -368,7 +368,7 @@ function FetchData() {
           {/* Display the missing IDs */}
           {missingIds.length > 0 && (
             <>
-              <div className='my-4 p-4 rounded-md shadow-md bg-dark_purple overflow-auto w-full max-w-5xl max-h-64'>
+              <div className='my-4 p-4 rounded-md shadow-md bg-dark_purple border border-linen overflow-auto w-full max-w-5xl max-h-64'>
                 <h2 className='text-lg font-bold mb-2 text-center'>
                   Missing CardMarket IDs
                 </h2>
@@ -406,7 +406,7 @@ function FetchData() {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000); // Reset the copied state after 2 seconds
                 }}
-                className='my-4 p-2 text-dark_purple bg-french_gray w-full max-w-xs rounded-md shadow-md'
+                className='my-4 p-2 text-dark_purple border border-linen bg-french_gray w-full max-w-xs rounded-md shadow-md'
                 disabled={copied}>
                 {copied ? 'Copied!' : 'Copy Missing IDs'}
               </button>
@@ -417,7 +417,7 @@ function FetchData() {
 
       {/* Display the error message */}
       {error && (
-        <div className='my-4 p-4 bg-slate_blue w-full max-w-xl rounded-md shadow-md'>
+        <div className='my-4 p-4 bg-slate_blue border border-linen w-full max-w-xl rounded-md shadow-md'>
           <h2 className='text-lg font-bold'>Error</h2>
           {Array.isArray(error) ? (
             error.map((errorMessage, index) => (
