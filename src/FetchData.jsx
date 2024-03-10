@@ -1,7 +1,58 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
+
+const year = new Date().getFullYear();
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Define a function to convert language code to language name
+function getLanguageName(code) {
+  const languages = {
+    1: 'English',
+    2: 'French',
+    3: 'German',
+    4: 'Spanish',
+    5: 'Italian',
+    6: 'Simplified Chinese',
+    7: 'Japanese',
+    8: 'Portuguese',
+    9: 'Russian',
+    10: 'Korean',
+    11: 'Traditional Chinese',
+  };
+  return languages[code] || '';
+}
+
+// Define a function to convert condition code to condition name
+function getConditionName(code) {
+  const conditions = {
+    MT: 'M',
+    NM: 'NM',
+    EX: 'LP',
+    GD: 'MP',
+    LP: 'MP',
+    PL: 'HP',
+    PO: 'D',
+  };
+  return conditions[code] || 'NM';
+}
+
+// Define a function to determine the foil status
+function getFoil(isFoil, finishes) {
+  if (isFoil === '1') {
+    if (finishes.includes('etched') && !finishes.includes('foil')) {
+      return 'etched';
+    } else {
+      return 'foil';
+    }
+  } else {
+    return '';
+  }
+}
 
 function FetchData() {
   const [data, setData] = useState([]);
@@ -12,6 +63,10 @@ function FetchData() {
   const [fileContent, setFileContent] = useState('');
   const [fileChanged, setFileChanged] = useState(true);
   const [copied, setCopied] = useState(null);
+
+  useEffect(() => {
+    console.log(missingIds);
+  }, [missingIds]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -28,9 +83,9 @@ function FetchData() {
     reader.readAsText(file);
   };
 
-  const handleLoadFile = () => {
+  const handleLoadFile = async () => {
     // Create a queue to store the updates
-    const updates = {};
+    const updates = [];
 
     if (!file) {
       setError('No file selected.');
@@ -50,7 +105,7 @@ function FetchData() {
     // Parse the CSV file
     Papa.parse(fileContent, {
       header: true,
-      complete: (results) => {
+      complete: async (results) => {
         const fields = results.meta.fields;
         if (!fields.includes('idProduct') && !fields.includes('Product ID')) {
           setError(
@@ -65,42 +120,74 @@ function FetchData() {
         }
 
         // Fetch data for each Cardmarket ID
-        results.data.forEach((row, index) => {
-          setTimeout(() => {
-            let isToken = '';
-            let expansion = row.Expansion || '';
-            let article = row.Article || '';
+        const promises = results.data.map(async (row, index) => {
+          await delay(index * 100);
 
-            if (fields.includes('Product ID')) {
-              if (row.Category && row.Category !== 'Magic Single') {
-                return;
-              }
-            }
+          let isToken = '';
+          let expansion = row.Expansion || '';
+          let article = row.Article || '';
 
-            expansion = expansion.replace(': Extras', '');
-            if (['Mystery Booster', 'The List'].includes(expansion)) {
-              expansion = 'PLST';
-            } else if (expansion === '30th Anniversary Celebration') {
-              expansion = 'P30A';
+          if (fields.includes('Product ID')) {
+            if (row.Category && row.Category !== 'Magic Single') {
+              return;
             }
-            if (expansion.includes('Commander:')) {
-              expansion = expansion.replace('Commander: ', '');
-            }
-            expansion = expansion.replace(': Promos', ' Promos');
-            article = article.replace(/\(.*\)/, '');
-            if (article.includes('Token')) {
-              article = article.replace(/Token.*$/, '');
-              expansion += ' Tokens';
-              isToken = '+t:token';
-            }
+          }
 
-            const idProduct = row['Product ID'] || row.idProduct;
-            const count = row.groupCount || row.Amount;
-            const purchasePrice = row.price || row['Article Value'];
+          expansion = expansion.replace(': Extras', '');
+          if (['Mystery Booster', 'The List'].includes(expansion)) {
+            expansion = 'PLST';
+          } else if (expansion === '30th Anniversary Celebration') {
+            expansion = 'P30A';
+          }
+          if (expansion.includes('Commander:')) {
+            expansion = expansion.replace('Commander: ', '');
+          }
+          expansion = expansion.replace(': Promos', ' Promos');
+          article = article.replace(/\(.*\)/, '');
+          if (article.includes('Token')) {
+            article = article.replace(/Token.*$/, '');
+            expansion += ' Tokens';
+            isToken = '+t:token';
+          }
 
-            axios
-              .get(`https://api.scryfall.com/cards/cardmarket/${idProduct}`)
-              .then((response) => {
+          const idProduct = row['Product ID'] || row.idProduct;
+          const count = row.groupCount || row.Amount;
+          const purchasePrice = row.price || row['Article Value'];
+
+          try {
+            const response = await axios.get(
+              `https://api.scryfall.com/cards/cardmarket/${idProduct}`
+            );
+            if (response.status === 200) {
+              const card = response.data;
+
+              // When you receive data, add the update to the queue
+              updates[index] = (prevData) => [
+                ...prevData,
+                {
+                  Count: count,
+                  Name: card.name,
+                  Edition: card.set,
+                  Language: getLanguageName(row.idLanguage) || '',
+                  Foil: getFoil(row.isFoil, card.finishes),
+                  CollectorNumber: card.collector_number,
+                  Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
+                  Condition: getConditionName(row.condition) || 'NM',
+                  PurchasePrice: purchasePrice,
+                },
+              ];
+            }
+          } catch (err) {
+            if (
+              err.response &&
+              err.response.status === 404 &&
+              row.Article &&
+              row.Expansion
+            ) {
+              try {
+                const response = await axios.get(
+                  `https://api.scryfall.com/cards/search?q=e%3A%22${expansion}%22+${article}${isToken}`
+                );
                 if (response.status === 200) {
                   const card = response.data;
 
@@ -109,125 +196,82 @@ function FetchData() {
                     ...prevData,
                     {
                       Count: count,
-                      Name: card.name,
-                      Edition: card.set,
+                      Name: card.data[0].name,
+                      Edition: card.data[0].set,
                       Language: getLanguageName(row.idLanguage) || '',
-                      Foil: getFoil(row.isFoil, card.finishes),
-                      CollectorNumber: card.collector_number,
+                      Foil: getFoil(row.isFoil, card.data[0].finishes),
+                      CollectorNumber: card.data[0].collector_number,
                       Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
                       Condition: getConditionName(row.condition) || 'NM',
                       PurchasePrice: purchasePrice,
                     },
                   ];
+                  setMissingIds((prevMissingIds) => [
+                    ...prevMissingIds,
+                    {
+                      id: idProduct,
+                      name: card.data[0].name,
+                      expansion: '',
+                      uri: card.data[0].scryfall_uri,
+                    },
+                  ]);
                 }
-              })
-              .catch((err) => {
+              } catch (err) {
                 if (
                   err.response &&
-                  err.response.status === 404 &&
-                  row.Article &&
-                  row.Expansion
-                ) {
-                  console.log(article, expansion);
-                  axios
-                    .get(
-                      `https://api.scryfall.com/cards/search?q=e%3A%22${expansion}%22+${article}${isToken}`
-                    )
-                    .then((response) => {
-                      if (response.status === 200) {
-                        const card = response.data;
-                        console.log(card);
-
-                        // When you receive data, add the update to the queue
-                        updates[index] = (prevData) => [
-                          ...prevData,
-                          {
-                            Count: count,
-                            Name: card.data[0].name,
-                            Edition: card.data[0].set,
-                            Language: getLanguageName(row.idLanguage) || '',
-                            Foil: getFoil(row.isFoil, card.data[0].finishes),
-                            CollectorNumber: card.data[0].collector_number,
-                            Alter: row.isAltered === 'true' ? 'TRUE' : 'FALSE',
-                            Condition: getConditionName(row.condition) || 'NM',
-                            PurchasePrice: purchasePrice,
-                          },
-                        ];
-                        setMissingIds((prevMissingIds) => [
-                          ...prevMissingIds,
-                          {
-                            id: idProduct,
-                            name: card.data[0].name,
-                            expansion: '',
-                            uri: card.data[0].scryfall_uri,
-                          },
-                        ]);
-                      }
-                    })
-                    .catch((err) => {
-                      if (
-                        err.response &&
-                        err.response.status == 404 &&
-                        row.Category == 'Magic Single'
-                      ) {
-                        setMissingIds((prevMissingIds) => [
-                          ...prevMissingIds,
-                          {
-                            id: idProduct,
-                            name: article,
-                            expansion: expansion,
-                            uri: '',
-                          },
-                        ]);
-                      }
-                    })
-                    .finally(() => {
-                      if (index === results.data.length - 1) {
-                        setLoading(false);
-                        setFileChanged(false);
-                      }
-                    });
-                } else if (
-                  err.response &&
-                  err.response.status === 404 &&
-                  !row.Category
+                  err.response.status == 404 &&
+                  row.Category == 'Magic Single'
                 ) {
                   setMissingIds((prevMissingIds) => [
                     ...prevMissingIds,
                     {
                       id: idProduct,
-                      name: 'Scryfall is missing this CardMarket ID.',
+                      name: article,
+                      expansion: expansion,
                       uri: '',
                     },
                   ]);
-                } else {
-                  if (err.response && err.response.status !== 404) {
-                    setError(err.message);
-                  }
-                  setFileChanged(false);
-                  setMissingIds([]);
-                  setData([]);
-                  setCopied(false);
                 }
-              })
-              .finally(() => {
-                if (index === results.data.length - 1) {
-                  // Convert the updates object back into an array in the correct order
-                  const orderedData = Object.keys(updates)
-                    .sort((a, b) => a - b)
-                    .map((key) => updates[key]);
+              }
+            } else if (
+              err.response &&
+              err.response.status === 404 &&
+              !row.Category
+            ) {
+              setMissingIds((prevMissingIds) => [
+                ...prevMissingIds,
+                {
+                  id: idProduct,
+                  name: 'Scryfall is missing this CardMarket ID.',
+                  uri: '',
+                },
+              ]);
+            } else {
+              if (err.response && err.response.status !== 404) {
+                setError(err.message);
+              }
+              setFileChanged(false);
+              setData([]);
+              setCopied(false);
+            }
+          } finally {
+            if (index === results.data.length - 1) {
+              // Convert the updates object back into an array in the correct order
+              const orderedData = Object.keys(updates)
+                .sort((a, b) => a - b)
+                .map((key) => updates[key]);
 
-                  orderedData.forEach((update) => {
-                    setData(update);
-                  });
-                  setLoading(false);
-                  setFileChanged(false);
-                }
-              });
-          }, index * 100); // delay for 100 milliseconds
+              for (let update of orderedData) {
+                setData(update);
+              }
+              setLoading(false);
+              setFileChanged(false);
+            }
+          }
         });
+        await Promise.all(promises);
       },
-      error: (err) => {
+      error: async (err) => {
         setError(err.message);
         setLoading(false);
         setMissingIds([]);
@@ -238,51 +282,6 @@ function FetchData() {
   };
 
   const disableLoadButton = loading || !fileChanged;
-
-  // Define a function to convert language code to language name
-  function getLanguageName(code) {
-    const languages = {
-      1: 'English',
-      2: 'French',
-      3: 'German',
-      4: 'Spanish',
-      5: 'Italian',
-      6: 'Simplified Chinese',
-      7: 'Japanese',
-      8: 'Portuguese',
-      9: 'Russian',
-      10: 'Korean',
-      11: 'Traditional Chinese',
-    };
-    return languages[code] || '';
-  }
-
-  // Define a function to convert condition code to condition name
-  function getConditionName(code) {
-    const conditions = {
-      MT: 'M',
-      NM: 'NM',
-      EX: 'LP',
-      GD: 'MP',
-      LP: 'MP',
-      PL: 'HP',
-      PO: 'D',
-    };
-    return conditions[code] || 'NM';
-  }
-
-  // Define a function to determine the foil status
-  function getFoil(isFoil, finishes) {
-    if (isFoil === '1') {
-      if (finishes.includes('etched') && !finishes.includes('foil')) {
-        return 'etched';
-      } else {
-        return 'foil';
-      }
-    } else {
-      return '';
-    }
-  }
 
   // Define a function to download the data as a CSV file
   function downloadData() {
@@ -309,16 +308,20 @@ function FetchData() {
         Load CSV File
       </button>
 
-      <div className='flex flex-col xl:flex-row space-y-4 xl:space-y-0 xl:space-x-4 my-4 w-full max-w-3xl xl:max-w-6xl'>
+      <div
+        className={`flex flex-col xl:flex-row space-y-4 xl:space-y-0 xl:space-x-4 my-4 w-full max-w-3xl xl:max-w-6xl ${
+          data.length > 0 ? '' : 'xl:flex-col'
+        }`}>
         <textarea
           value={
             fileContent ||
             'Please load your CardMarket CSV file. The input data will show here once loaded.'
           }
           readOnly
-          className='p-2 border border-gray bg-[#3f3f3f] text-white rounded-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
+          className={`p-2 border border-gray bg-[#3f3f3f] text-white rounded-md resize-none h-[200px] lg:h-[500px] ${
+            data.length > 0 ? 'xl:w-1/2' : 'xl:w-full'
+          }`}
         />
-        {/* Fix flashing of the textarea when the data is loading */}
         {data.length > 0 && (
           <textarea
             value={Papa.unparse(data)}
@@ -403,6 +406,18 @@ function FetchData() {
           <p>{error}</p>
         </div>
       )}
+      <footer className='flex-shrink-0 mt-8 text-sm text-center lg:fixed lg:m-1 lg:bottom-0 lg:right-1'>
+        <p className='text-gray-light'>
+          Made with <span className='font-sans'>&#9749;</span> by
+          <a
+            href='https://github.com/Kerakis'
+            target='_blank'
+            rel='noopener noreferrer'>
+            &nbsp;Kerakis&nbsp;
+          </a>
+          © {year}
+        </p>
+      </footer>
     </div>
   );
 }
