@@ -473,7 +473,7 @@ function FetchData() {
           )}
         </div>
       )}
-      <footer className='flex-shrink-0 mt-8 text-sm text-center lg:fixed lg:m-1 lg:bottom-0 lg:right-1'>
+      <footer className='shrink-0 mt-8 text-sm text-center lg:fixed lg:m-1 lg:bottom-0 lg:right-1'>
         <p>
           Made with <span className='font-sans'>&#9749;</span> by
           <a
