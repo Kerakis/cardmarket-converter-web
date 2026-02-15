@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.10",
-    "axios": "^1.11.0",
+    "axios": "^1.13.5",
     "file-saver": "^2.0.5",
     "papaparse": "^5.4.1",
     "postcss": "^8.4.35",
@@ -22,11 +22,11 @@
   "devDependencies": {
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^5.1.4",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^7.2.4"
+    "vite": "^7.3.1"
   }
 }
