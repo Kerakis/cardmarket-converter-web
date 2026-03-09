@@ -168,7 +168,7 @@ function FetchData() {
 
           try {
             const response = await axios.get(
-              `https://api.scryfall.com/cards/cardmarket/${idProduct}`
+              `https://api.scryfall.com/cards/cardmarket/${idProduct}`,
             );
             if (response.status === 200) {
               const card = response.data;
@@ -198,7 +198,7 @@ function FetchData() {
             ) {
               try {
                 const response = await axios.get(
-                  `https://api.scryfall.com/cards/search?q=e%3A%22${expansion}%22+${article}${isToken}`
+                  `https://api.scryfall.com/cards/search?q=e%3A%22${expansion}%22+${article}${isToken}`,
                 );
                 if (response.status === 200) {
                   const card = response.data;
@@ -306,7 +306,7 @@ function FetchData() {
   }
 
   const sortedMissingIds = [...missingIds].sort((a, b) =>
-    a.reason.localeCompare(b.reason)
+    a.reason.localeCompare(b.reason),
   );
 
   return (
@@ -329,10 +329,10 @@ function FetchData() {
         {error
           ? 'Error'
           : loading
-          ? 'Loading'
-          : fileChanged
-          ? 'Load CSV File'
-          : 'Data Loaded'}
+            ? 'Loading'
+            : fileChanged
+              ? 'Load CSV File'
+              : 'Data Loaded'}
       </button>
 
       <div
@@ -345,7 +345,7 @@ function FetchData() {
             'Please load your CardMarket CSV file. The input data will show here once loaded.'
           }
           readOnly
-          className={`p-2 border border-linen bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] ${
+          className={`p-2 border border-linen bg-dark_purple rounded-md shadow-md resize-none h-50 lg:h-125 ${
             data.length > 0 ? 'xl:w-1/2' : 'xl:w-full'
           }`}
         />
@@ -353,7 +353,7 @@ function FetchData() {
           <textarea
             value={Papa.unparse(data)}
             readOnly
-            className='p-2 border border-linen bg-dark_purple rounded-md shadow-md resize-none h-[200px] lg:h-[500px] xl:w-1/2'
+            className='p-2 border border-linen bg-dark_purple rounded-md shadow-md resize-none h-50 lg:h-125 xl:w-1/2'
           />
         )}
       </div>
