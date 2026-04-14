@@ -16,12 +16,12 @@
     "papaparse": "^5.4.1",
     "postcss": "^8.4.35",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react-dom": "^19.2.5",
     "tailwindcss": "^4.1.10"
   },
   "devDependencies": {
     "@types/react": "^18.2.19",
-    "@types/react-dom": "^18.2.19",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
