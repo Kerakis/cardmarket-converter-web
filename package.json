@@ -1,32 +1,48 @@
 {
-  "name": "cardmarket-converter-web",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@tailwindcss/postcss": "^4.2.3",
-    "axios": "^1.14.0",
-    "file-saver": "^2.0.5",
-    "papaparse": "^5.4.1",
-    "postcss": "^8.4.35",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "tailwindcss": "^4.1.10"
-  },
-  "devDependencies": {
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^18.2.19",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.2.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "vite": "^8.0.9"
-  }
+	"name": "cardmarket-converter-web",
+	"private": true,
+	"version": "2.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write ."
+	},
+	"dependencies": {
+		"axios": "^1.14.0",
+		"file-saver": "^2.0.5",
+		"papaparse": "^5.5.2"
+	},
+	"devDependencies": {
+		"@eslint/compat": "^2.0.4",
+		"@eslint/js": "^10.0.1",
+		"@sveltejs/adapter-static": "^3.0.10",
+		"@sveltejs/kit": "^2.57.0",
+		"@sveltejs/vite-plugin-svelte": "^7.0.0",
+		"@tailwindcss/vite": "^4.2.4",
+		"@types/file-saver": "^2.0.7",
+		"@types/node": "^22",
+		"@types/papaparse": "^5.3.15",
+		"eslint": "^10.2.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.17.0",
+		"globals": "^17.4.0",
+		"prettier": "^3.8.1",
+		"prettier-plugin-svelte": "^3.5.1",
+		"prettier-plugin-tailwindcss": "^0.7.2",
+		"svelte": "^5.55.2",
+		"svelte-check": "^4.4.6",
+		"tailwindcss": "^4.2.4",
+		"typescript": "^6.0.2",
+		"typescript-eslint": "^8.58.1",
+		"vite": "^8.0.7"
+	},
+	"overrides": {
+		"cookie": "^0.7.0"
+	}
 }
