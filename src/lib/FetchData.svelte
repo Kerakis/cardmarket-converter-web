@@ -358,8 +358,7 @@
 			class="h-50 resize-none rounded-md border border-linen bg-dark_purple p-2 shadow-md lg:h-125 {data.length >
 			0
 				? 'xl:w-1/2'
-				: 'xl:w-full'}"
-		></textarea>
+				: 'xl:w-full'}"></textarea>
 		{#if data.length > 0}
 			<textarea
 				value={Papa.unparse(data)}
@@ -456,7 +455,7 @@
 	<footer class="mt-8 shrink-0 text-center text-sm lg:fixed lg:right-1 lg:bottom-0 lg:m-1">
 		<p>
 			Made with <span class="font-sans">&#9749;</span> by
-			<a href="https://github.com/Kerakis" target="_blank" rel="noopener noreferrer">
+			<a href="https://www.kerakis.com/" target="_blank" rel="noopener noreferrer">
 				&nbsp;Kerakis&nbsp;
 			</a>
 			© {year}
