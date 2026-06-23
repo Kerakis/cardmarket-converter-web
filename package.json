@@ -16,7 +16,7 @@
 	"dependencies": {
 		"axios": "^1.18.1",
 		"file-saver": "^2.0.5",
-		"papaparse": "^5.5.3"
+		"papaparse": "^5.5.4"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.1.0",
