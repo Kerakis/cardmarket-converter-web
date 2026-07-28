@@ -28,7 +28,7 @@
 		"@types/file-saver": "^2.0.7",
 		"@types/node": "^26",
 		"@types/papaparse": "^5.5.2",
-		"eslint": "^10.7.0",
+		"eslint": "^10.8.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.22.0",
 		"globals": "^17.8.0",
