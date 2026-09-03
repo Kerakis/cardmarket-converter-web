@@ -6,65 +6,17 @@ updates:
       interval: 'weekly'
     labels:
       - dependencies
-    # Ecosystem groups below include ALL update-types (major, minor, patch) so
-    # tightly coupled toolchains upgrade in a single PR. This prevents the
-    # situation where a plugin calls an API removed in a host package's major
-    # release (e.g. eslint 9 -> 10 removing context.getSourceCode(), which
-    # eslint-plugin-security@3 still called). Order matters: Dependabot assigns
-    # each package to the FIRST matching group, so listing vite before svelte
-    # keeps @sveltejs/vite-plugin-svelte travelling with vite majors (the
-    # stronger coupling) rather than with svelte majors.
+    # Two PRs a week at most: everything non-major in one, every major in the
+    # other. Keeping all majors together stops coupled toolchains (eslint + its
+    # plugins, vite + vite-plugin-svelte) from landing in separate PRs. If one
+    # major is broken, add it to an `ignore:` list here until it isn't.
     groups:
-      eslint:
-        patterns:
-          - 'eslint'
-          - '@eslint/*'
-          - 'eslint-plugin-*'
-          - 'eslint-config-*'
-          - '@typescript-eslint/*'
-          - 'typescript-eslint'
-          - 'svelte-eslint-parser'
-          - '@vitest/eslint-plugin'
-      vite:
-        # Listed before svelte so @sveltejs/vite-plugin-svelte lands here.
-        # vite-plugin-svelte majors track vite majors (v6 needs vite ^6||^7,
-        # v7 needs vite ^8), so this plugin must move with vite, not svelte.
-        patterns:
-          - 'vite'
-          - 'vite-*'
-          - '@sveltejs/vite-plugin-svelte'
-      svelte:
-        patterns:
-          - 'svelte'
-          - 'svelte-*'
-          - '@sveltejs/*'
-          - 'prettier-plugin-svelte'
-      vitest:
-        patterns:
-          - 'vitest'
-          - 'vitest-*'
-          - '@vitest/*'
-      playwright:
-        patterns:
-          - 'playwright'
-          - '@playwright/*'
-          - '@axe-core/playwright'
-      tailwind:
-        patterns:
-          - 'tailwindcss'
-          - '@tailwindcss/*'
-      testing-library:
-        patterns:
-          - '@testing-library/*'
-      types:
-        patterns:
-          - '@types/*'
-      npm-minor-patch:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
+      npm:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
+      npm-major:
+        patterns: ['*']
+        update-types: ['major']
 
   - package-ecosystem: 'github-actions'
     directory: '/'
