@@ -131,14 +131,12 @@
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			complete: async (results: any) => {
 				const fields = results.meta.fields as string[];
-				if (
-					!(
-						fields.includes('idProduct') ||
-						(fields.includes('Product ID') &&
-							fields.includes('Article') &&
-							fields.includes('Expansion'))
-					)
-				) {
+				if (!(
+					fields.includes('idProduct') ||
+					(fields.includes('Product ID') &&
+						fields.includes('Article') &&
+						fields.includes('Expansion'))
+				)) {
 					error = [
 						'Invalid file format.',
 						'The file must include either an "idProduct" column header or all three of the following column headers: "Product ID", "Article", and "Expansion".',
